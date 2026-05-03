@@ -2,98 +2,36 @@ import type { SteamCatalogEntry, TrailGame } from "../types";
 
 export type StoreOffer = {
   store: string;
-  priceRub: string;
-  note?: string;
+  price: string;
+  note: "точно" | "ориентир" | "нет в продаже";
   url: string;
-  exact: boolean;
 };
 
-type ExternalOffer = {
+type ExternalPrice = {
   store: string;
   usd?: number;
-  unavailable?: string;
   url: string;
 };
 
-const search = (value: string) => encodeURIComponent(value);
-const psSearch = (title: string) => `https://store.playstation.com/en-us/search/${search(title)}`;
-const epicSearch = (title: string) => `https://store.epicgames.com/en-US/browse?q=${search(title)}&sortBy=relevance&sortDir=DESC`;
-const gogSearch = (title: string) => `https://www.gog.com/en/games?query=${search(title)}`;
-const nintendoSearch = (title: string) => `https://www.nintendo.com/us/search/#q=${search(title)}&p=1&cat=gme&sort=df`;
+const encode = (value: string) => encodeURIComponent(value);
 
-const externalPrices: Record<string, ExternalOffer[]> = {
-  "trails-in-the-sky-fc": [
-    { store: "GOG", usd: 19.99, url: gogSearch("The Legend of Heroes Trails in the Sky") },
-    { store: "PlayStation Store", unavailable: "нет современной цифровой версии", url: psSearch("The Legend of Heroes Trails in the Sky") },
-    { store: "Epic Games Store", unavailable: "нет страницы игры", url: epicSearch("The Legend of Heroes Trails in the Sky") }
+const stores: Record<string, ExternalPrice[]> = {
+  default: [
+    { store: "PlayStation", usd: 59.99, url: "https://store.playstation.com/en-us/search/" },
+    { store: "Epic Games", usd: 59.99, url: "https://store.epicgames.com/en-US/browse" },
+    { store: "GOG", usd: 39.99, url: "https://www.gog.com/en/games" }
   ],
-  "trails-in-the-sky-sc": [
-    { store: "GOG", usd: 29.99, url: gogSearch("The Legend of Heroes Trails in the Sky SC") },
-    { store: "PlayStation Store", unavailable: "нет современной цифровой версии", url: psSearch("The Legend of Heroes Trails in the Sky SC") },
-    { store: "Epic Games Store", unavailable: "нет страницы игры", url: epicSearch("The Legend of Heroes Trails in the Sky SC") }
+  sky: [
+    { store: "GOG", usd: 19.99, url: "https://www.gog.com/en/games" }
   ],
-  "trails-in-the-sky-3rd": [
-    { store: "GOG", usd: 29.99, url: gogSearch("The Legend of Heroes Trails in the Sky the 3rd") },
-    { store: "PlayStation Store", unavailable: "нет современной цифровой версии", url: psSearch("The Legend of Heroes Trails in the Sky the 3rd") },
-    { store: "Epic Games Store", unavailable: "нет страницы игры", url: epicSearch("The Legend of Heroes Trails in the Sky the 3rd") }
-  ],
-  "trails-from-zero": [
-    { store: "PlayStation Store", usd: 39.99, url: psSearch("The Legend of Heroes Trails from Zero") },
-    { store: "Nintendo eShop", usd: 39.99, url: nintendoSearch("The Legend of Heroes Trails from Zero") },
-    { store: "GOG", usd: 39.99, url: gogSearch("The Legend of Heroes Trails from Zero") }
-  ],
-  "trails-to-azure": [
-    { store: "PlayStation Store", usd: 39.99, url: psSearch("The Legend of Heroes Trails to Azure") },
-    { store: "Nintendo eShop", usd: 39.99, url: nintendoSearch("The Legend of Heroes Trails to Azure") },
-    { store: "GOG", usd: 39.99, url: gogSearch("The Legend of Heroes Trails to Azure") }
-  ],
-  "trails-of-cold-steel": [
-    { store: "PlayStation Store", usd: 39.99, url: psSearch("The Legend of Heroes Trails of Cold Steel") },
-    { store: "GOG", usd: 39.99, url: gogSearch("The Legend of Heroes Trails of Cold Steel") }
-  ],
-  "trails-of-cold-steel-ii": [
-    { store: "PlayStation Store", usd: 39.99, url: psSearch("The Legend of Heroes Trails of Cold Steel II") },
-    { store: "GOG", usd: 39.99, url: gogSearch("The Legend of Heroes Trails of Cold Steel II") }
-  ],
-  "trails-of-cold-steel-iii": [
-    { store: "PlayStation Store", usd: 59.99, url: psSearch("The Legend of Heroes Trails of Cold Steel III") },
-    { store: "Epic Games Store", usd: 59.99, url: epicSearch("The Legend of Heroes Trails of Cold Steel III") },
-    { store: "Nintendo eShop", usd: 59.99, url: nintendoSearch("The Legend of Heroes Trails of Cold Steel III") },
-    { store: "GOG", usd: 59.99, url: gogSearch("The Legend of Heroes Trails of Cold Steel III") }
-  ],
-  "trails-of-cold-steel-iv": [
-    { store: "PlayStation Store", usd: 59.99, url: psSearch("The Legend of Heroes Trails of Cold Steel IV") },
-    { store: "Epic Games Store", usd: 59.99, url: epicSearch("The Legend of Heroes Trails of Cold Steel IV") },
-    { store: "Nintendo eShop", usd: 59.99, url: nintendoSearch("The Legend of Heroes Trails of Cold Steel IV") },
-    { store: "GOG", usd: 59.99, url: gogSearch("The Legend of Heroes Trails of Cold Steel IV") }
-  ],
-  "trails-into-reverie": [
-    { store: "PlayStation Store", usd: 59.99, url: psSearch("The Legend of Heroes Trails into Reverie") },
-    { store: "Epic Games Store", usd: 59.99, url: epicSearch("The Legend of Heroes Trails into Reverie") },
-    { store: "Nintendo eShop", usd: 59.99, url: nintendoSearch("The Legend of Heroes Trails into Reverie") },
-    { store: "GOG", usd: 59.99, url: gogSearch("The Legend of Heroes Trails into Reverie") }
-  ],
-  "trails-through-daybreak": [
-    { store: "PlayStation Store", usd: 59.99, url: "https://store.playstation.com/en-us/concept/10001886/" },
-    { store: "Epic Games Store", usd: 59.99, url: "https://store.epicgames.com/p/the-legend-of-heroes-trails-through-daybreak-dac84d" },
-    { store: "Nintendo eShop", usd: 59.99, url: nintendoSearch("The Legend of Heroes Trails through Daybreak") },
-    { store: "GOG", usd: 59.99, url: gogSearch("The Legend of Heroes Trails through Daybreak") }
-  ],
-  "trails-through-daybreak-ii": [
-    { store: "PlayStation Store", usd: 59.99, url: psSearch("The Legend of Heroes Trails through Daybreak II") },
-    { store: "Epic Games Store", usd: 59.99, url: epicSearch("The Legend of Heroes Trails through Daybreak II") },
-    { store: "Nintendo eShop", usd: 59.99, url: nintendoSearch("The Legend of Heroes Trails through Daybreak II") },
-    { store: "GOG", usd: 59.99, url: gogSearch("The Legend of Heroes Trails through Daybreak II") }
-  ],
-  "trails-beyond-the-horizon": [
-    { store: "PlayStation Store", usd: 59.99, url: psSearch("The Legend of Heroes Trails beyond the Horizon") },
-    { store: "Epic Games Store", usd: 59.99, url: "https://store.epicgames.com/en-US/p/the-legend-of-heroes-trails-beyond-the-horizon" },
-    { store: "Nintendo eShop", usd: 59.99, url: nintendoSearch("The Legend of Heroes Trails beyond the Horizon") },
-    { store: "GOG", usd: 59.99, url: gogSearch("The Legend of Heroes Trails beyond the Horizon") }
+  crossbell: [
+    { store: "PlayStation", usd: 39.99, url: "https://store.playstation.com/en-us/search/" },
+    { store: "Nintendo", usd: 39.99, url: "https://www.nintendo.com/us/search/" },
+    { store: "GOG", usd: 39.99, url: "https://www.gog.com/en/games" }
   ]
 };
 
-function rubFromUsd(usd: number, usdRub?: number) {
+function rubPrice(usd: number, usdRub?: number) {
   if (!usdRub) {
     return `$${usd.toFixed(2)}`;
   }
@@ -101,26 +39,37 @@ function rubFromUsd(usd: number, usdRub?: number) {
   return `≈ ${Math.round(usd * usdRub).toLocaleString("ru-RU")} руб.`;
 }
 
+function externalStores(game: TrailGame) {
+  if (game.arc === "liberl") return stores.sky;
+  if (game.arc === "crossbell") return stores.crossbell;
+  return stores.default;
+}
+
+function searchUrl(store: string, baseUrl: string, title: string) {
+  if (store === "PlayStation") return `${baseUrl}${encode(title)}`;
+  if (store === "Nintendo") return `${baseUrl}#q=${encode(title)}&p=1&cat=gme&sort=df`;
+  if (store === "Epic Games") return `${baseUrl}?q=${encode(title)}&sortBy=relevance&sortDir=DESC`;
+  return `${baseUrl}?query=${encode(title)}`;
+}
+
 export function storeOffersFor(game: TrailGame, steam?: SteamCatalogEntry, usdRub?: number): StoreOffer[] {
   const offers: StoreOffer[] = [
     {
       store: "Steam",
-      priceRub: steam?.price ?? "нет цены",
+      price: steam?.price ?? "нет цены",
       note: "точно",
-      url: steam?.steamUrl ?? `https://store.steampowered.com/app/${game.appId}`,
-      exact: true
+      url: steam?.steamUrl ?? `https://store.steampowered.com/app/${game.appId}`
     }
   ];
 
-  for (const offer of externalPrices[game.slug] ?? []) {
+  externalStores(game).forEach((offer) => {
     offers.push({
       store: offer.store,
-      priceRub: offer.usd ? rubFromUsd(offer.usd, usdRub) : offer.unavailable ?? "нет цены",
-      note: offer.usd ? "ориентир" : undefined,
-      url: offer.url,
-      exact: false
+      price: offer.usd ? rubPrice(offer.usd, usdRub) : "нет цены",
+      note: offer.usd ? "ориентир" : "нет в продаже",
+      url: searchUrl(offer.store, offer.url, game.title)
     });
-  }
+  });
 
   return offers;
 }

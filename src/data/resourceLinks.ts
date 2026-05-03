@@ -1,57 +1,40 @@
-import { steamGuideSpotlight } from "./trails";
-import type { TrailGame } from "../types";
+import type { GameLink, TrailGame } from "../types";
 
-export type ResourceLink = {
-  title: string;
-  description: string;
-  url: string;
-  kind: "characters" | "maps" | "walkthrough" | "official";
-};
-
-const search = (value: string) => encodeURIComponent(value);
-
-export function characterUrl(name: string) {
-  return `https://kiseki.fandom.com/wiki/Special:Search?query=${search(name)}`;
-}
+const encode = (value: string) => encodeURIComponent(value);
 
 export function characterDatabaseUrl(game: TrailGame) {
-  return `https://kiseki.fandom.com/wiki/Special:Search?query=${search(`${game.title} characters`)}`;
+  return `https://kiseki.fandom.com/wiki/Special:Search?query=${encode(`${game.title} characters`)}`;
 }
 
-export function resourceLinksFor(game: TrailGame): ResourceLink[] {
-  const links: ResourceLink[] = [
+export function resourceLinksFor(game: TrailGame): GameLink[] {
+  const links: GameLink[] = [
     {
-      title: "Карты, сундуки и чеклисты в Steam Guides",
-      description: "Раздел руководств Steam по игре: карты зон, сундуки, рыбалка, журнал монстров и маршруты на 100%.",
-      url: `https://steamcommunity.com/app/${game.appId}/guides/?searchText=${search("chest map 100%")}`,
-      kind: "maps"
+      label: "Персонажи",
+      kind: "characters",
+      url: characterDatabaseUrl(game)
     },
     {
-      title: "Прохождения в Steam Guides",
-      description: "Подборка пользовательских прохождений, маршрутов достижений и списков пропускаемых вещей.",
-      url: `https://steamcommunity.com/app/${game.appId}/guides/?searchText=${search("walkthrough guide")}`,
-      kind: "walkthrough"
+      label: "Карты и сундуки",
+      kind: "maps",
+      url: `https://steamcommunity.com/app/${game.appId}/guides/?searchText=${encode("map chest")}`
     },
     {
-      title: "Поиск прохождений на GameFAQs",
-      description: "Удобно для старых частей серии: пошаговые прохождения, списки коллекционных предметов и справочные материалы.",
-      url: `https://gamefaqs.gamespot.com/search?game=${search(game.title)}`,
-      kind: "walkthrough"
+      label: "Прохождение",
+      kind: "walkthrough",
+      url: `https://steamcommunity.com/app/${game.appId}/guides/?searchText=${encode("walkthrough")}`
     },
     {
-      title: "Поиск карт и гайдов на Neoseeker",
-      description: "Дополнительный источник прохождений, карт, боссов и подсказок по побочным активностям.",
-      url: `https://www.neoseeker.com/search/?q=${search(game.title)}`,
-      kind: "maps"
+      label: "GameFAQs",
+      kind: "walkthrough",
+      url: `https://gamefaqs.gamespot.com/search?game=${encode(game.title)}`
     }
   ];
 
-  if (game.slug === steamGuideSpotlight.gameSlug) {
+  if (game.slug === "trails-from-zero") {
     links.unshift({
-      title: "Steam-гайд: 100% достижений и полное прохождение",
-      description: "Руководство, которое ты просил вставить: маршрут по достижениям, сундукам и пропускаемым действиям.",
-      url: steamGuideSpotlight.url,
-      kind: "walkthrough"
+      label: "Steam-гайд 100%",
+      kind: "walkthrough",
+      url: "https://steamcommunity.com/sharedfiles/filedetails/?id=3610446298"
     });
   }
 

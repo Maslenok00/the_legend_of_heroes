@@ -1,104 +1,88 @@
-import type { CSSProperties } from "react";
-import { useCallback, useMemo, useState } from "react";
-import { DatabaseZap, ExternalLink, RefreshCcw, Satellite, ShieldCheck, Sparkles } from "lucide-react";
-import { GameSection } from "./components/GameSection";
-import { Starfield } from "./components/Starfield";
-import { SteamGuideSpotlight } from "./components/SteamGuideSpotlight";
-import { TimelineNav } from "./components/TimelineNav";
-import { steamGuideSpotlight, trailsGames } from "./data/trails";
-import { gameVisuals } from "./data/visuals";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { GameSlide } from "./components/GameSlide";
+import { SideNav } from "./components/SideNav";
+import { TopBar } from "./components/TopBar";
+import { trailsGames } from "./data/trails";
 import { useExchangeRate } from "./hooks/useExchangeRate";
 import { useSteamCatalog } from "./hooks/useSteamCatalog";
 
 export function App() {
   const [activeSlug, setActiveSlug] = useState(trailsGames[0].slug);
+  const activeSlugRef = useRef(activeSlug);
   const steamCatalog = useSteamCatalog();
   const usdRub = useExchangeRate();
-  const activeGame = trailsGames.find((game) => game.slug === activeSlug) ?? trailsGames[0];
-  const zeroSteam = steamCatalog.byAppId.get(1668510);
 
-  const background = useMemo(() => {
-    return gameVisuals[activeGame.slug]?.wallpaper;
-  }, [activeGame.slug]);
-
-  const handleActive = useCallback((slug: string) => {
+  const handleActiveGame = useCallback((slug: string) => setActiveSlug(slug), []);
+  const scrollToGame = useCallback((slug: string) => {
+    activeSlugRef.current = slug;
     setActiveSlug(slug);
+    document.getElementById(slug)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
+  useEffect(() => {
+    activeSlugRef.current = activeSlug;
+  }, [activeSlug]);
+
+  useEffect(() => {
+    let isLocked = false;
+    let unlockTimer = 0;
+
+    const scrollByOneSlide = (direction: 1 | -1) => {
+      const currentIndex = trailsGames.findIndex((game) => game.slug === activeSlugRef.current);
+      const safeIndex = currentIndex === -1 ? 0 : currentIndex;
+      const nextIndex = Math.min(Math.max(safeIndex + direction, 0), trailsGames.length - 1);
+      const nextGame = trailsGames[nextIndex];
+
+      if (nextGame.slug === activeSlugRef.current) {
+        return;
+      }
+
+      scrollToGame(nextGame.slug);
+    };
+
+    const handleWheel = (event: WheelEvent) => {
+      if (event.ctrlKey || Math.abs(event.deltaY) < 8) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (isLocked) {
+        return;
+      }
+
+      isLocked = true;
+      scrollByOneSlide(event.deltaY > 0 ? 1 : -1);
+      window.clearTimeout(unlockTimer);
+      unlockTimer = window.setTimeout(() => {
+        isLocked = false;
+      }, 820);
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      window.removeEventListener("wheel", handleWheel);
+      window.clearTimeout(unlockTimer);
+    };
+  }, [scrollToGame]);
+
   return (
-    <div className="app-shell" style={{ "--active-art": background ? `url("${background}")` : "none" } as CSSProperties}>
-      <Starfield />
-      <div className="ambient-art" aria-hidden="true" />
-      <header className="site-hero">
-        <nav className="topbar">
-          <a className="brand-lockup" href="#top" aria-label="Атлас Земурии">
-            <span className="brand-sigil">АЗ</span>
-            <span>Атлас Земурии</span>
-          </a>
-          <div className="topbar-links">
-            <a href="#steam-guide">Steam-гайд</a>
-            <a href={`https://store.steampowered.com/app/${activeGame.appId}`} target="_blank" rel="noreferrer">
-              Текущая игра <ExternalLink size={14} />
-            </a>
-          </div>
-        </nav>
+    <div className="app-shell">
+      <TopBar />
+      <SideNav activeSlug={activeSlug} games={trailsGames} onSelect={scrollToGame} />
 
-        <div className="hero-grid" id="top">
-          <div className="hero-copy">
-            <div className="eyebrow">
-              <Satellite size={17} />
-              Хронология Trails / магазины / гайды
-            </div>
-            <h1>Атлас серии The Legend of Heroes: Trails</h1>
-            <div className="hero-actions">
-              <a className="primary-link" href="#trails-in-the-sky-fc">
-                Начать с Sky FC
-              </a>
-              <a className="ghost-link" href="#trails-beyond-the-horizon">
-                К последней игре
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div className="hero-stats">
-          <span>
-            <Sparkles size={16} />
-            {trailsGames.length} игр
-          </span>
-          <span>
-            <DatabaseZap size={16} />
-            {trailsGames.reduce((count, game) => count + game.characters.length, 0)} персонажей
-          </span>
-          <span>
-            <ShieldCheck size={16} />
-            внешние базы и гайды
-          </span>
-          <span>
-            <RefreshCcw size={16} />
-            цены в рублях
-          </span>
-        </div>
-      </header>
-
-      <SteamGuideSpotlight guide={steamGuideSpotlight} steam={zeroSteam} />
-
-      <div className="timeline-shell">
-        <TimelineNav activeSlug={activeSlug} games={trailsGames} />
-        <main className="game-stack">
-          {trailsGames.map((game, index) => (
-            <GameSection
-              active={activeSlug === game.slug}
-              game={game}
-              index={index}
-              key={game.slug}
-              onActive={handleActive}
-              steam={steamCatalog.byAppId.get(game.appId)}
-              usdRub={usdRub}
-            />
-          ))}
-        </main>
-      </div>
+      <main className="slides">
+        {trailsGames.map((game) => (
+          <GameSlide
+            game={game}
+            key={game.slug}
+            onActive={handleActiveGame}
+            steam={steamCatalog.byAppId.get(game.appId)}
+            usdRub={usdRub}
+          />
+        ))}
+      </main>
     </div>
   );
 }

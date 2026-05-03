@@ -17,12 +17,6 @@ const rateCache = new Map<string, { expiresAt: number; rate: number; updatedAt?:
 const cacheTtlMs = 1000 * 60 * 30;
 const rateCacheTtlMs = 1000 * 60 * 60 * 6;
 
-const stripHtml = (value?: string) =>
-  value
-    ?.replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
 const safeParam = (value: unknown, fallback: string) => {
   if (typeof value !== "string") {
     return fallback;
@@ -57,21 +51,7 @@ async function fetchSteamApp(appId: number, language: string, country: string): 
       data?: {
         name?: string;
         release_date?: { date?: string };
-        developers?: string[];
-        publishers?: string[];
-        genres?: { description: string }[];
-        categories?: { description: string }[];
         price_overview?: { final_formatted?: string };
-        short_description?: string;
-        header_image?: string;
-        capsule_image?: string;
-        capsule_imagev5?: string;
-        background?: string;
-        background_raw?: string;
-        screenshots?: { path_full: string }[];
-        website?: string;
-        metacritic?: { score?: number };
-        recommendations?: { total?: number };
       };
     }
   >;
@@ -87,19 +67,7 @@ async function fetchSteamApp(appId: number, language: string, country: string): 
     appId,
     name: data.name ?? `Steam app ${appId}`,
     releaseDate: data.release_date?.date,
-    developers: data.developers ?? [],
-    publishers: data.publishers ?? [],
-    genres: data.genres?.map((genre) => genre.description) ?? [],
-    categories: data.categories?.map((category) => category.description) ?? [],
     price: data.price_overview?.final_formatted,
-    shortDescription: stripHtml(data.short_description),
-    headerImage: data.header_image,
-    capsuleImage: data.capsule_imagev5 ?? data.capsule_image,
-    background: data.background_raw ?? data.background,
-    screenshots: data.screenshots?.slice(0, 6).map((screenshot) => screenshot.path_full) ?? [],
-    website: data.website,
-    metacritic: data.metacritic?.score,
-    recommendations: data.recommendations?.total,
     steamUrl: steamUrl(appId)
   };
 }
@@ -110,17 +78,6 @@ function fallbackSteamEntry(appId: number): SteamCatalogEntry {
   return {
     appId,
     name: local?.title ?? `Steam app ${appId}`,
-    releaseDate: local?.releaseWindow,
-    developers: [],
-    publishers: [],
-    genres: [],
-    categories: [],
-    shortDescription: local?.summary,
-    headerImage: `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/header.jpg`,
-    capsuleImage: `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/capsule_616x353.jpg`,
-    background: `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/library_hero.jpg`,
-    screenshots: [],
-    website: undefined,
     steamUrl: steamUrl(appId)
   };
 }
