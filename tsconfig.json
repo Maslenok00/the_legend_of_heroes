@@ -10,6 +10,9 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "moduleResolution": "Node",
     "resolveJsonModule": true,
     "isolatedModules": true,

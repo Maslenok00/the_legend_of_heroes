@@ -1,7 +1,7 @@
 import express from "express";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { createServer } from "node:http";
+import { createServer, type Server } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer as createViteServer } from "vite";
@@ -11,7 +11,9 @@ import type { SteamCatalogEntry } from "../src/types";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 const isProduction = process.env.NODE_ENV === "production" || process.argv.includes("--production");
+const host = "127.0.0.1";
 const port = Number(process.env.PORT ?? 5173);
+const portAttempts = !process.env.PORT && !isProduction ? 10 : 1;
 const steamCache = new Map<string, { expiresAt: number; payload: SteamCatalogEntry[] }>();
 const rateCache = new Map<string, { expiresAt: number; rate: number; updatedAt?: string }>();
 const cacheTtlMs = 1000 * 60 * 30;
@@ -222,8 +224,38 @@ async function createApp() {
   return httpServer;
 }
 
+function startServer(server: Server, selectedPort = port, remainingAttempts = portAttempts) {
+  const onListening = () => {
+    server.off("error", onError);
+    console.log(`Атлас Земурии запущен: http://${host}:${selectedPort}`);
+  };
+
+  const onError = (error: Error) => {
+    const startupError = error as NodeJS.ErrnoException;
+    server.off("listening", onListening);
+
+    if (startupError.code === "EADDRINUSE" && remainingAttempts > 1) {
+      const nextPort = selectedPort + 1;
+      console.warn(`Port ${selectedPort} is already in use; trying ${nextPort}.`);
+      startServer(server, nextPort, remainingAttempts - 1);
+      return;
+    }
+
+    if (startupError.code === "EADDRINUSE") {
+      console.error(`Port ${selectedPort} is already in use. Stop the other process or set PORT to a free port.`);
+    } else {
+      console.error(`Server failed to start on http://${host}:${selectedPort}.`);
+    }
+
+    console.error(startupError);
+    process.exit(1);
+  };
+
+  server.once("error", onError);
+  server.once("listening", onListening);
+  server.listen(selectedPort, host);
+}
+
 createApp().then((server) => {
-  server.listen(port, "127.0.0.1", () => {
-    console.log(`Атлас Земурии запущен: http://127.0.0.1:${port}`);
-  });
+  startServer(server);
 });
