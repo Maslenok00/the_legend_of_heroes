@@ -11,7 +11,8 @@ export function resourceLinksFor(game: TrailGame): GameLink[] {
     {
       label: "Персонажи",
       kind: "characters",
-      url: characterDatabaseUrl(game)
+      // url: characterDatabaseUrl(game)
+      url: "https://kiseki.fandom.com/wiki/Category:Trails_in_the_Sky_FC_Characters"
     },
     {
       label: "Карты и сундуки",
